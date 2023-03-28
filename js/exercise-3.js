@@ -1,71 +1,62 @@
 import _Error from 'isotropic-error';
 
 const _exercise3 = {
-    baseUrl: 'https://api.tdameritrade.com',
-    async fetchJoke (id) {
+    baseUrl: 'http://api.aladhan.com',
+    async fetchJoke () {
         try {
-            const res = await fetch(`${this.baseUrl}/v1/marketdata/GOOG/quotes`, {
-                headers: this.headers
-            });
+            const today = new Date();
 
-            console.log(res);
+            const year = today.getFullYear();
+            const month = today.getMonth() + 1;
+            const date = today.getDate();
+
+            const newDate = `${today.getDate()} ${today.toLocaleString('default', { month: 'short' })} ${today.getFullYear()}`;
+
+            const res = await fetch(`${this.baseUrl}/v1/calendarByCity/${year}/${month}?city=London&country=Canada&method=2`);
 
             if (!res.ok) {
                 throw new _Error(`Error: ${res.status} - ${res.statusText}`);
             }
 
-            let fetchJokesData = await res.json();
+            const fetchJokesData = await res.json();
 
-            return `${fetchJokesData.id}: \t ${fetchJokesData.joke}`;
-        } catch (err) {
-            throw new _Error(`Error while fetching joke with ID: ${id} - ${err}`);
-        }
-    },
-    async fetchRandomJoke () {
-        try {
-            const res = await fetch(`${this.baseUrl}/`, {
-                headers: this.headers
-            });
+            const todayPrayerTimes = fetchJokesData.data.find(item => item.date.readable === newDate);
 
-            if (!res.ok) {
-                throw new _Error(`Error: ${res.status} - ${res.statusText}`);
+            const removeFajrEDT = todayPrayerTimes.timings.Fajr.split(' ');
+            const removeDhuhrEDT = todayPrayerTimes.timings.Dhuhr.split(' ');
+            const removeAsrEDT = todayPrayerTimes.timings.Asr.split(' ');
+            const removeMaghribEDT = todayPrayerTimes.timings.Maghrib.split(' ');
+            const removeIshaEDT = todayPrayerTimes.timings.Isha.split(' ');
+
+            const hours = today.getHours();
+            const minutes = today.getMinutes();
+
+            const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+            if (time === removeFajrEDT[0]) {
+                return removeFajrEDT[0];
             }
 
-            let getData = await res.json();
-
-            return `${getData.id}: \t ${getData.joke}`;
-        } catch (err) {
-            throw new _Error(`Error while fetching random joke: ${err}`);
-        }
-    },
-    headers: {
-        Accept: 'application/json'
-    },
-    async searchForJokesWith (term) {
-        try {
-            const dict = {},
-                res = await fetch(`${this.baseUrl}/search?term=${term}`, {
-                    headers: this.headers
-                });
-
-            if (!res.ok) {
-                throw new _Error(`Error: ${res.status} - ${res.statusText}`);
+            if (time === removeDhuhrEDT[0]) {
+                return removeFajrEDT[0];
             }
 
-            let getSearchJokesData = await res.json(),
-                str = '';
-
-            getSearchJokesData.results.forEach(da => {
-                dict[da.id] = da.joke;
-            });
-
-            for (const [p, val] of Object.entries(dict)) {
-                str += `${p}: \t ${val}\n`;
+            if (time === removeAsrEDT[0]) {
+                return removeFajrEDT[0];
             }
 
-            return str;
+            if (time === removeMaghribEDT[0]) {
+                return removeFajrEDT[0];
+            }
+
+            if (time === removeIshaEDT[0]) {
+                return removeFajrEDT[0];
+            }
+            const holdArray = (JSON.stringify(todayPrayerTimes.timings)).split(',');
+            
+            return holdArray.map(item => item);
         } catch (err) {
-            throw new _Error(`Error while searching for jokes: ${err}`);
+            console.error(`Error while fetching joke with ID: ${err}`);
         }
     }
 };
